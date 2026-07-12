@@ -12,6 +12,7 @@ data/        Cached market data (git-ignored, reproducible from the notebooks)
 ## Stages
 
 1. **Data & exploration** (`notebooks/01_exploration.ipynb`) — download IBEX 35 and S&P 500 data, compute log returns, and examine the stylized facts of financial returns (volatility clustering, heavy tails, autocorrelation) that motivate GARCH modelling.
+2. **Stationarity & mean model** (`notebooks/02_stationarity_arima.ipynb`) — test stationarity (ADF, KPSS) on prices and returns, identify and fit an ARIMA mean model via ACF/PACF and AIC search, and show via Ljung-Box and ARCH-LM that the residuals are uncorrelated but still have autocorrelated variance — the bridge to GARCH.
 
 ## Setup
 

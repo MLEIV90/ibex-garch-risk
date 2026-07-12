@@ -6,6 +6,7 @@ seaborn>=0.13
 scipy>=1.13
 statsmodels>=0.14
 arch>=7.0
+pmdarima>=2.0
 jupyter>=1.0
 ipykernel>=6.29
 nbformat>=5.10
