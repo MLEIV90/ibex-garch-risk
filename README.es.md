@@ -115,14 +115,16 @@ proyecto de credit scoring validó un modelo de PD; este valida un modelo de VaR
   observaciones, así que esos días se descartan del conteo de violaciones
   tanto para EWMA como para GARCH antes del backtest — de lo contrario, los
   días menos confiables de EWMA sesgarían la comparación.
-- **Duplicación de código intencional:** el bloque de descarga de datos, el
-  helper del cuantil t de Student estandarizado, y la recursión EWMA se
-  repiten literalmente en los notebooks 01-05 en vez de importarse de un
-  módulo compartido. Cada notebook está pensado para leerse (y ejecutarse)
-  como un documento autocontenido — un `src/utils.py` reduciría el código
-  pero implicaría que ningún notebook podría copiarse y entenderse o
-  ejecutarse por sí solo, lo cual importa más aquí que la no-repetición
-  (DRY).
+- **Helpers compartidos, no análisis compartido:** `src/utils.py` es la
+  única fuente de verdad para las tres funciones que antes se copiaban y
+  pegaban en cada notebook — descarga/alineación de datos
+  (`download_data`), el cuantil t de Student estandarizado
+  (`std_t_quantile`), y la recursión EWMA (`ewma_volatility`) — importadas
+  vía `sys.path.insert(0, "..")`. Todo lo demás (ajuste de modelos,
+  backtesting, gráficos, interpretación) permanece en el notebook al que
+  pertenece; el módulo existe para eliminar el desvío por copiar-y-pegar en
+  tres piezas pequeñas y bien probadas, no para sacar el análisis de los
+  notebooks.
 
 ## Uso
 
@@ -131,8 +133,9 @@ pip install -r requirements.txt
 jupyter lab
 ```
 
-Cada notebook es autocontenido: descarga sus propios datos con `yfinance` y se
-corre de principio a fin.
+Cada notebook descarga sus propios datos y se corre de principio a fin; la
+única dependencia compartida entre notebooks es `src/utils.py` (tres
+funciones helper pequeñas y documentadas — ver Notas metodológicas).
 
 ## Stack
 

@@ -109,13 +109,15 @@ project validated a PD model; this validates a VaR model.
   recursion is seeded from its own first 30 observations, so those days are
   dropped from breach counts for *both* EWMA and GARCH before backtesting —
   otherwise EWMA's least-reliable days would bias the comparison.
-- **Intentional code duplication:** the data-download block, the standardized
-  Student-t quantile helper, and the EWMA recursion are repeated verbatim
-  across notebooks 01-05 rather than imported from a shared module. Each
-  notebook is meant to be read (and run) as a self-contained document — a
-  `src/utils.py` would shrink the code but mean no single notebook could be
-  copied out and understood or executed on its own, which matters more here
-  than DRY-ness.
+- **Shared helpers, not shared analysis:** `src/utils.py` is the single
+  source of truth for the three functions that used to be copy-pasted into
+  every notebook — data download/alignment (`download_data`), the
+  standardized Student-t quantile (`std_t_quantile`), and the EWMA
+  recursion (`ewma_volatility`) — each imported via `sys.path.insert(0,
+  "..")`. Everything else (model fitting, backtesting, plotting,
+  interpretation) stays inline in the notebook that owns it; the module
+  exists to remove copy-paste drift on three small, well-tested pieces, not
+  to move the analysis out of the notebooks.
 
 ## Setup
 
@@ -124,8 +126,9 @@ pip install -r requirements.txt
 jupyter lab
 ```
 
-Each notebook is self-contained: it downloads its own data via `yfinance` and
-can be run top to bottom.
+Each notebook downloads its own data and can be run top to bottom; the only
+shared dependency across notebooks is `src/utils.py` (three small, documented
+helper functions — see Methodology notes).
 
 ## Stack
 

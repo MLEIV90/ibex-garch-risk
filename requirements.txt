@@ -1,11 +1,13 @@
-yfinance>=1.0
-pandas>=2.2
-numpy>=1.26
+# Pinned exactly (rather than >=) for the six libraries that directly affect
+# numerical results: numpy, pandas, arch, statsmodels, scipy, yfinance.
+yfinance==1.0
+pandas==3.0.0
+numpy==2.4.1
 matplotlib>=3.9
 seaborn>=0.13
-scipy>=1.13
-statsmodels>=0.14
-arch>=7.0
+scipy==1.17.0
+statsmodels==0.14.6
+arch==8.0.0
 pmdarima>=2.0
 jupyter>=1.0
 ipykernel>=6.29
