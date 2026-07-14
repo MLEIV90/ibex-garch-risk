@@ -110,6 +110,19 @@ proyecto de credit scoring validó un modelo de PD; este valida un modelo de VaR
   vez de depender de un único ajuste sobre toda la muestra, que de otro modo
   dejaría al modelo "ver" el futuro —incluido el COVID-2020— antes de hacer el
   backtest sobre él.
+- **Las comparaciones EWMA justas excluyen la ventana de calentamiento:** la
+  recursión de varianza de EWMA se inicializa con sus propias primeras 30
+  observaciones, así que esos días se descartan del conteo de violaciones
+  tanto para EWMA como para GARCH antes del backtest — de lo contrario, los
+  días menos confiables de EWMA sesgarían la comparación.
+- **Duplicación de código intencional:** el bloque de descarga de datos, el
+  helper del cuantil t de Student estandarizado, y la recursión EWMA se
+  repiten literalmente en los notebooks 01-05 en vez de importarse de un
+  módulo compartido. Cada notebook está pensado para leerse (y ejecutarse)
+  como un documento autocontenido — un `src/utils.py` reduciría el código
+  pero implicaría que ningún notebook podría copiarse y entenderse o
+  ejecutarse por sí solo, lo cual importa más aquí que la no-repetición
+  (DRY).
 
 ## Uso
 

@@ -105,6 +105,17 @@ project validated a PD model; this validates a VaR model.
   (≈60% initial training, refit every 5 trading days) rather than relying on a
   single full-sample fit, which would otherwise let the model "see" the
   future — including COVID-2020 — before backtesting on it.
+- **Fair EWMA comparisons exclude the warm-up window:** EWMA's variance
+  recursion is seeded from its own first 30 observations, so those days are
+  dropped from breach counts for *both* EWMA and GARCH before backtesting —
+  otherwise EWMA's least-reliable days would bias the comparison.
+- **Intentional code duplication:** the data-download block, the standardized
+  Student-t quantile helper, and the EWMA recursion are repeated verbatim
+  across notebooks 01-05 rather than imported from a shared module. Each
+  notebook is meant to be read (and run) as a self-contained document — a
+  `src/utils.py` would shrink the code but mean no single notebook could be
+  copied out and understood or executed on its own, which matters more here
+  than DRY-ness.
 
 ## Setup
 
