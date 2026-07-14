@@ -37,35 +37,40 @@ validation of the risk estimates:
 ## Headline findings
 
 **Cross-market volatility (Stage 3):**
-- The **leverage effect is stronger in the S&P 500** than the IBEX (GJR γ ≈ 0.24
-  vs 0.18): US drops raise volatility more sharply.
-- The **S&P 500 has heavier tails** (Student-t ν ≈ 5 vs ≈ 7 for the IBEX).
+- The **leverage effect is stronger in the S&P 500** than the IBEX (GJR γ ≈ 0.23
+  vs 0.19): US drops raise volatility more sharply.
+- The **S&P 500 has heavier tails** (Student-t ν ≈ 5.3 vs ≈ 7.3 for the IBEX).
 - Volatility is highly persistent in both (α+β ≈ 0.92–0.98).
 
 **Risk validation (Stages 4–5):**
 - Stage 5's centerpiece is a **genuine out-of-sample backtest**: an expanding
   window refit every 5 trading days, forecasting one day ahead — not a model
   fit once on the full sample and evaluated on the same data it was fit on.
-- Out-of-sample, only **2 of 8** (index, model, confidence) combinations
-  cleanly pass conditional coverage: S&P 500 GARCH at 95%, IBEX 35 GARCH at
-  99%.
-- **GARCH vs. EWMA is genuinely mixed out-of-sample, not a clean GARCH win**:
-  GARCH is better calibrated at 95% for both indices, but at 99% the S&P 500
-  result *reverses* — EWMA passes where GARCH fails.
-- **The single most important finding**: the IBEX 35 shows statistically
-  significant breach *clustering* out-of-sample (Christoffersen test) that a
-  naive, full-sample-fitted backtest completely missed — a concrete
-  demonstration of why look-ahead bias is dangerous, not just a theoretical
-  caveat.
+- Out-of-sample, the pass/fail split is **by index, not by model**: **all 4
+  S&P 500 cells** (GARCH and EWMA, 95% and 99%) cleanly pass conditional
+  coverage, while **all 4 IBEX 35 cells fail** — every one of them for the
+  same reason.
+- **The single most important finding**: every failing IBEX 35 cell has a
+  *good* breach count (Kupiec p up to 0.99) but **statistically significant
+  breach clustering** (Christoffersen independence test) — the model gets the
+  average frequency of bad days right but reacts too slowly once a regime
+  shift is underway. A naive, full-sample-fitted backtest sits right on the
+  edge of hiding exactly this problem.
+- **Basel's traffic-light framework cannot see this failure mode at all**:
+  IBEX 35 GARCH's 99% VaR lands comfortably in Basel's green zone (breach rate
+  ≈1.01%, almost exactly nominal) — the same cell that fails conditional
+  coverage outright once independence is checked.
 
 **Honest conclusion:** parametric VaR — even with GARCH, Student-t
-innovations, and a genuinely out-of-sample test — is not fully validated at
-the 99% level, and which model "wins" depends on the index and confidence
-level. This is a genuine validation finding, not a failure: it points to
-**Expected Shortfall or an EVT approach** as more prudent for the tail, and it
-demonstrates concretely why **out-of-sample testing, not just in-sample fit,
-is the actual point of model validation**. The project deliberately reports
-this rather than forcing a "the model passes" narrative.
+innovations, and a genuinely out-of-sample test — validates cleanly for one
+market (S&P 500) and fails for another (IBEX 35), for a specific,
+identifiable reason (breach clustering, not miscalibrated coverage). This is
+a genuine validation finding, not a failure: it points to **Expected
+Shortfall, a faster-reacting variance specification, or an EVT approach** as
+more prudent responses, and it demonstrates concretely why **out-of-sample
+testing — including the independence of breaches, not just their count — is
+the actual point of model validation**. The project deliberately reports this
+rather than forcing a "the model passes" narrative.
 
 ## Why this isn't another generic ARIMA-GARCH repo
 
@@ -83,6 +88,16 @@ project validated a PD model; this validates a VaR model.
   for volatility modelling.
 - **No survivorship bias:** analyzing the index series (not its constituents)
   inherits a history that already accounted for firms that dropped out.
+- **Common trading days only:** the IBEX 35 and S&P 500 don't share a holiday
+  calendar; forward-filling the gaps would manufacture fake zero-return days
+  for whichever market was closed. All notebooks instead keep only days both
+  markets actually traded (`dropna(how="any")`), so every return is a real
+  price move.
+- **Reproducible by design:** every notebook uses a fixed data cutoff
+  (`2026-07-01`) rather than "today," so the documented results don't drift
+  each time a notebook is re-run. Warnings are filtered narrowly (two named,
+  known-benign messages) rather than blanket-suppressed, so genuine
+  convergence or numerical warnings would still surface.
 - **~10-year window:** ample for GARCH, includes the COVID-2020 stress; older
   regimes deliberately excluded. A 5/10/15-year sensitivity analysis is a noted
   robustness extension.

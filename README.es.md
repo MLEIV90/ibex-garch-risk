@@ -38,8 +38,8 @@ la validación regulatoria de las medidas de riesgo:
 
 **Volatilidad cross-market (Etapa 3):**
 - El **efecto apalancamiento es más fuerte en el S&P 500** que en el IBEX (γ de
-  GJR ≈ 0,24 vs 0,18): las caídas en EE.UU. elevan más la volatilidad.
-- El **S&P 500 tiene colas más pesadas** (ν de la t ≈ 5 vs ≈ 7 del IBEX).
+  GJR ≈ 0,23 vs 0,19): las caídas en EE.UU. elevan más la volatilidad.
+- El **S&P 500 tiene colas más pesadas** (ν de la t ≈ 5,3 vs ≈ 7,3 del IBEX).
 - La volatilidad es muy persistente en ambos (α+β ≈ 0,92–0,98).
 
 **Validación de riesgo (Etapas 4–5):**
@@ -47,27 +47,32 @@ la validación regulatoria de las medidas de riesgo:
   expandible, reajustada cada 5 días hábiles, pronosticando un día hacia
   adelante — no un modelo ajustado una sola vez sobre toda la muestra y evaluado
   sobre los mismos datos con los que se ajustó.
-- Out-of-sample, **solo 2 de 8** combinaciones (índice, modelo, nivel de
-  confianza) pasan limpiamente la cobertura condicional: S&P 500 con GARCH al
-  95%, IBEX 35 con GARCH al 99%.
-- **GARCH vs. EWMA da un resultado genuinamente mixto out-of-sample, no una
-  victoria limpia de GARCH**: GARCH está mejor calibrado al 95% en ambos
-  índices, pero al 99% el resultado del S&P 500 se **invierte** — EWMA pasa
-  donde GARCH falla.
-- **El hallazgo más importante**: el IBEX 35 muestra un agrupamiento de
-  violaciones (*clustering*) estadísticamente significativo out-of-sample (test
-  de Christoffersen) que un backtest naive, ajustado sobre toda la muestra, no
-  detectó — una demostración concreta de por qué el sesgo de anticipación
-  (*look-ahead bias*) es peligroso, no solo una advertencia teórica.
+- Out-of-sample, el resultado se divide **por índice, no por modelo**: **las 4
+  celdas del S&P 500** (GARCH y EWMA, 95% y 99%) pasan limpiamente la cobertura
+  condicional, mientras que **las 4 celdas del IBEX 35 fallan** — todas por la
+  misma razón.
+- **El hallazgo más importante**: cada celda del IBEX 35 que falla tiene un
+  *buen* conteo de violaciones (Kupiec p hasta 0,99) pero un **agrupamiento de
+  violaciones estadísticamente significativo** (test de independencia de
+  Christoffersen) — el modelo acierta la frecuencia promedio de días malos pero
+  reacciona demasiado lento una vez que un cambio de régimen está en marcha. Un
+  backtest naive, ajustado sobre toda la muestra, queda al borde de ocultar
+  exactamente este problema.
+- **El marco semáforo de Basilea no puede ver esta falla en absoluto**: el VaR
+  al 99% de IBEX 35 con GARCH cae cómodamente en la zona verde de Basilea (tasa
+  de violación ≈1,01%, casi exactamente la nominal) — la misma celda que falla
+  la cobertura condicional por completo al revisar la independencia.
 
 **Conclusión honesta:** el VaR paramétrico —incluso con GARCH, t de Student, y
-un test genuinamente out-of-sample— no está completamente validado al nivel del
-99%, y qué modelo "gana" depende del índice y del nivel de confianza. Es un
-hallazgo de validación genuino, no un fracaso: señala al **Expected Shortfall o
-a un enfoque EVT** como más prudentes para la cola, y demuestra concretamente
-por qué **el testeo out-of-sample, no solo el ajuste in-sample, es el verdadero
-objetivo de la validación de modelos**. El proyecto reporta esto
-deliberadamente, en vez de forzar un "el modelo pasa".
+un test genuinamente out-of-sample— se valida limpiamente para un mercado
+(S&P 500) y falla para otro (IBEX 35), por una razón específica e
+identificable (agrupamiento de violaciones, no una cobertura mal calibrada).
+Es un hallazgo de validación genuino, no un fracaso: señala al **Expected
+Shortfall, una especificación de varianza que reaccione más rápido, o un
+enfoque EVT** como respuestas más prudentes, y demuestra concretamente por qué
+**el testeo out-of-sample —incluyendo la independencia de las violaciones, no
+solo su conteo— es el verdadero objetivo de la validación de modelos**. El
+proyecto reporta esto deliberadamente, en vez de forzar un "el modelo pasa".
 
 ## Por qué no es otro repo genérico de ARIMA-GARCH
 
@@ -86,6 +91,17 @@ proyecto de credit scoring validó un modelo de PD; este valida un modelo de VaR
 - **Sin sesgo de supervivencia:** analizar la serie del índice (no sus
   componentes) hereda una historia que ya contabilizó a las empresas que
   salieron.
+- **Solo días de trading comunes:** el IBEX 35 y el S&P 500 no comparten
+  calendario de festivos; rellenar los huecos hacia adelante (*forward-fill*)
+  fabricaría retornos cero artificiales para el mercado que estaba cerrado.
+  Todos los notebooks conservan solo los días en que ambos mercados operaron
+  (`dropna(how="any")`), así cada retorno es un movimiento de precio real.
+- **Reproducible por diseño:** cada notebook usa una fecha de corte fija
+  (`2026-07-01`) en vez de "hoy", para que los resultados documentados no
+  cambien cada vez que se re-ejecuta un notebook. Los warnings se filtran de
+  forma puntual (dos mensajes nombrados y conocidos como benignos) en vez de
+  silenciarse en bloque, así que warnings genuinos de convergencia o
+  numéricos seguirían apareciendo.
 - **Ventana de ~10 años:** amplia para GARCH, incluye el estrés del COVID-2020;
   regímenes más viejos excluidos deliberadamente. Un análisis de sensibilidad
   5/10/15 años es una extensión de robustez anotada.
