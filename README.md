@@ -2,122 +2,109 @@
 
 [🇪🇸 Español](README.es.md) · **🇬🇧 English**
 
-Market-risk model **validation** on the Spanish IBEX 35 index, using the
+Market-risk model **validation** on the Spanish IBEX 35 index using the
 ARIMA–GARCH framework. The endpoint is not trading performance but a risk
-question: **which volatility model produces the most reliable Value-at-Risk, and
-does it survive formal backtesting?** The S&P 500 is included as a comparison
-benchmark, making it a cross-market study.
+question: **would this VaR model have held up in real time, and does it survive
+formal backtesting?** The S&P 500 is included as a benchmark, making it a
+cross-market study.
 
 Built as a Risk Analytics / FRM-oriented econometric project: every stage pairs
-theory with an interpretation of the actual results.
+theory with an interpretation of the actual results, and the limitations are
+stated explicitly.
 
 ## What it does
 
-A five-stage pipeline, one notebook per stage, from raw prices to regulatory
-validation of the risk estimates:
+Five stages, one notebook each, from raw prices to regulatory validation:
 
-1. **Data & exploration** (`notebooks/01_exploration.ipynb`) — log returns and
-   the stylized facts (volatility clustering, heavy tails, non-normality) that
-   motivate everything that follows.
-2. **Stationarity & mean model** (`notebooks/02_stationarity_arima.ipynb`) —
-   ADF/KPSS testing, an ARIMA mean model, and the bridge to GARCH: returns are
-   uncorrelated in the mean but their squared residuals are not.
-3. **The GARCH family** (`notebooks/03_garch_family.ipynb`) — GARCH(1,1),
-   GJR-GARCH and EGARCH with Student-t innovations; persistence, the leverage
-   effect and tail thickness, validated on standardized residuals.
-4. **VaR & Expected Shortfall** (`notebooks/04_var_es.ipynb`) — dynamic
-   parametric VaR and ES from the preferred models, benchmarked against an
-   EWMA/RiskMetrics baseline.
-5. **VaR backtesting** (`notebooks/05_var_backtesting.ipynb`) — Kupiec and
-   Christoffersen tests implemented from scratch, run on both a naive in-sample
-   fit and a genuine **expanding-window out-of-sample backtest**, plus the
-   Basel traffic-light framework, with an honest read of where each model
-   passes and fails.
+1. **Data & exploration** (`01_exploration.ipynb`) — log returns and the stylized
+   facts (volatility clustering, heavy tails, non-normality) that motivate
+   everything downstream.
+2. **Stationarity & mean model** (`02_stationarity_arima.ipynb`) — ADF/KPSS, an
+   ARIMA mean model, and the bridge to GARCH: returns are uncorrelated in the
+   mean, but their squared residuals are not.
+3. **The GARCH family** (`03_garch_family.ipynb`) — GARCH(1,1), GJR-GARCH and
+   EGARCH with Student-t innovations; persistence, leverage and tail thickness,
+   validated on standardized residuals.
+4. **VaR & Expected Shortfall** (`04_var_es.ipynb`) — dynamic parametric VaR and
+   ES, against an EWMA/RiskMetrics baseline (same Student-t quantile, so the
+   comparison isolates the volatility method).
+5. **VaR backtesting** (`05_var_backtesting.ipynb`) — Kupiec and Christoffersen
+   implemented from scratch, run on a genuine **out-of-sample** backtest
+   (expanding window, model refit on past data only).
+
+## Methodology: the out-of-sample backtest
+
+The headline results come from a backtest that simulates what a risk manager
+would actually have done: the first 60% of the sample is the initial estimation
+window; for each of the remaining 995 days the model is re-estimated **only on
+data up to t−1** and produces a 1-step-ahead volatility forecast (refit every 5
+trading days as a documented computational compromise). An in-sample backtest is
+also reported — explicitly labelled as biased — to make the difference visible.
 
 ## Headline findings
 
-**Cross-market volatility (Stage 3):**
-- The **leverage effect is stronger in the S&P 500** than the IBEX (GJR γ ≈ 0.23
-  vs 0.19): US drops raise volatility more sharply.
-- The **S&P 500 has heavier tails** (Student-t ν ≈ 5.3 vs ≈ 7.3 for the IBEX).
-- Volatility is highly persistent in both (α+β ≈ 0.92–0.98).
+**Cross-market volatility (Stage 3, 2,486 obs):**
+- **Leverage is stronger in the S&P 500** (GJR γ = 0.233) than the IBEX (0.189).
+- **The S&P has heavier tails** (Student-t ν ≈ 5.4 vs ≈ 7.6 for the IBEX).
+- **Volatility is more persistent in the S&P** (0.97–0.98 vs 0.92–0.93).
+- Preferred by AIC: **GJR-GARCH for the IBEX, EGARCH for the S&P** — asymmetric
+  models beat plain GARCH in both markets.
 
-**Risk validation (Stages 4–5):**
-- Stage 5's centerpiece is a **genuine out-of-sample backtest**: an expanding
-  window refit every 5 trading days, forecasting one day ahead — not a model
-  fit once on the full sample and evaluated on the same data it was fit on.
-- Out-of-sample, the pass/fail split is **by index, not by model**: **all 4
-  S&P 500 cells** (GARCH and EWMA, 95% and 99%) cleanly pass conditional
-  coverage, while **all 4 IBEX 35 cells fail** — every one of them for the
-  same reason.
-- **The single most important finding**: every failing IBEX 35 cell has a
-  *good* breach count (Kupiec p up to 0.99) but **statistically significant
-  breach clustering** (Christoffersen independence test) — the model gets the
-  average frequency of bad days right but reacts too slowly once a regime
-  shift is underway. A naive, full-sample-fitted backtest sits right on the
-  edge of hiding exactly this problem.
-- **Basel's traffic-light framework cannot see this failure mode at all**:
-  IBEX 35 GARCH's 99% VaR lands comfortably in Basel's green zone (breach rate
-  ≈1.01%, almost exactly nominal) — the same cell that fails conditional
-  coverage outright once independence is checked.
+**Risk validation (Stage 5, out-of-sample, 995 obs):**
+- **All four S&P 500 combinations pass** conditional coverage; **all four IBEX 35
+  combinations fail.** The result splits by *market*, not by model.
+- **The IBEX fails on clustering, not on count.** IBEX GARCH at 99% has near
+  perfect unconditional coverage (10 breaches vs 10 expected, Kupiec p = 0.987 —
+  the best value in the table) but fails independence (p = 0.003): its breaches
+  arrive in clusters. The model gets *how often* right, but not *when*.
+- GARCH produces fewer breaches than EWMA in both markets, but in the IBEX even
+  GARCH cannot disperse them — the Spanish market's problem isn't solved by
+  swapping the volatility model.
+- **Stress-tested against its own methodology:** the headline backtest refits
+  every 5 days as a computational compromise, so we re-ran it at 1, 10 and 20
+  days too. The IBEX's clustering tendency survives every cadence (independence
+  p never exceeds 0.085; the S&P's never drops below 0.075) — but the exact
+  pass/fail verdict is cadence-sensitive for both markets. The signal is real;
+  no single backtest configuration should be read as a final verdict.
 
-**Honest conclusion:** parametric VaR — even with GARCH, Student-t
-innovations, and a genuinely out-of-sample test — validates cleanly for one
-market (S&P 500) and fails for another (IBEX 35), for a specific,
-identifiable reason (breach clustering, not miscalibrated coverage). This is
-a genuine validation finding, not a failure: it points to **Expected
-Shortfall, a faster-reacting variance specification, or an EVT approach** as
-more prudent responses, and it demonstrates concretely why **out-of-sample
-testing — including the independence of breaches, not just their count — is
-the actual point of model validation**. The project deliberately reports this
-rather than forcing a "the model passes" narrative.
+**What a validator would conclude:** for the S&P 500 the parametric GARCH VaR is
+validated and fit for use. For the IBEX 35 it is **not** validated — it calibrates
+the average level of risk well but clusters its failures, which is the most
+dangerous failure mode (failing repeatedly during a crisis). Recommended next
+steps for the IBEX: regime-switching models, Expected Shortfall, or an EVT
+treatment of the tail.
 
 ## Why this isn't another generic ARIMA-GARCH repo
 
 Generic "fit GARCH and plot the volatility" notebooks are everywhere and are
 mostly descriptive or trading-oriented. This one plays a different game:
-**model validation with a regulatory / FRM lens**, on a **non-Anglo market**,
-with **formal VaR backtesting** and an **honest EWMA benchmark** — the parts most
-repos skip. The through-line with the rest of my portfolio: a credit-scoring
-project validated a PD model; this validates a VaR model.
+**model validation with a regulatory / FRM lens**, on a **non-Anglo market**, with a
+**genuine out-of-sample backtest**, formal statistical tests implemented from
+scratch, and an **apples-to-apples EWMA benchmark** — the parts most repos skip.
+The through-line with the rest of my portfolio: a credit-scoring project
+validated a PD model; this validates a VaR model.
 
 ## Methodology notes
 
-- **Adjusted prices** (`auto_adjust=True`): corrected for splits/dividends to
-  avoid artificial volatility. ^IBEX and ^GSPC are price-return indices, correct
-  for volatility modelling.
+- **Adjusted prices** (`auto_adjust=True`): corrected for splits/dividends.
+  ^IBEX and ^GSPC are price-return indices, correct for volatility modelling.
 - **No survivorship bias:** analyzing the index series (not its constituents)
   inherits a history that already accounted for firms that dropped out.
-- **Common trading days only:** the IBEX 35 and S&P 500 don't share a holiday
-  calendar; forward-filling the gaps would manufacture fake zero-return days
-  for whichever market was closed. All notebooks instead keep only days both
-  markets actually traded (`dropna(how="any")`), so every return is a real
-  price move.
-- **Reproducible by design:** every notebook uses a fixed data cutoff
-  (`2026-07-01`) rather than "today," so the documented results don't drift
-  each time a notebook is re-run. Warnings are filtered narrowly (two named,
-  known-benign messages) rather than blanket-suppressed, so genuine
-  convergence or numerical warnings would still surface.
-- **~10-year window:** ample for GARCH, includes the COVID-2020 stress; older
-  regimes deliberately excluded. A 5/10/15-year sensitivity analysis is a noted
-  robustness extension.
-- **Out-of-sample validation:** Stage 5 refits GARCH on an expanding window
-  (≈60% initial training, refit every 5 trading days) rather than relying on a
-  single full-sample fit, which would otherwise let the model "see" the
-  future — including COVID-2020 — before backtesting on it.
-- **Fair EWMA comparisons exclude the warm-up window:** EWMA's variance
-  recursion is seeded from its own first 30 observations, so those days are
-  dropped from breach counts for *both* EWMA and GARCH before backtesting —
-  otherwise EWMA's least-reliable days would bias the comparison.
-- **Shared helpers, not shared analysis:** `src/utils.py` is the single
-  source of truth for the three functions that used to be copy-pasted into
-  every notebook — data download/alignment (`download_data`), the
-  standardized Student-t quantile (`std_t_quantile`), and the EWMA
-  recursion (`ewma_volatility`) — each imported via `sys.path.insert(0,
-  "..")`. Everything else (model fitting, backtesting, plotting,
-  interpretation) stays inline in the notebook that owns it; the module
-  exists to remove copy-paste drift on three small, well-tested pieces, not
-  to move the analysis out of the notebooks.
+- **Common trading days only:** the two markets are aligned on shared sessions
+  rather than forward-filling, which would create artificial zero returns.
+- **Fixed window** ending 2026-07-01 (~10 years, 2,486 obs) so results are
+  reproducible; includes the COVID-2020 stress.
+
+## Limitations
+
+Stated explicitly in the notebooks: 1-day horizon only (no multi-day VaR);
+univariate (no portfolio risk or tail dependence via copulas); symmetric
+Student-t (a skewed-t may fit equity returns better); parametric VaR
+underestimates the extreme tail (EVT would model it directly); a single 10-year
+window (5/10/15y sensitivity remains an open robustness gap); refit cadence was
+stress-tested (1/5/10/20 days — see Stage 5, Section 12) rather than left as an
+untested assumption; and VaR is a statistical measure — it excludes liquidity
+and model risk.
 
 ## Setup
 
@@ -126,21 +113,11 @@ pip install -r requirements.txt
 jupyter lab
 ```
 
-Each notebook downloads its own data and can be run top to bottom; the only
-shared dependency across notebooks is `src/utils.py` (three small, documented
-helper functions — see Methodology notes).
+Shared helpers live in `src/utils.py`; each notebook imports from there and runs
+top to bottom.
 
 ## Stack
 
 Python · pandas · numpy · scipy · statsmodels · arch (Kevin Sheppard) · pmdarima
-· yfinance · matplotlib — Elo not involved here; this is pure econometrics:
-ARIMA, GARCH/EGARCH/GJR, VaR, Expected Shortfall, Kupiec & Christoffersen.
-
-## Limitations & possible extensions
-
-- Parametric VaR underestimates the tail; an **EVT / Expected-Shortfall**
-  treatment would be the natural next step.
-- **Sensitivity analysis** across window lengths (5/10/15y, including 2008).
-- An optional **machine-learning challenger** (e.g. LSTM or gradient boosting on
-  realized volatility) as an honest comparison — kept out of the core so it
-  doesn't dilute the risk-validation focus.
+· yfinance · matplotlib — ARIMA, GARCH/EGARCH/GJR, VaR, Expected Shortfall,
+Kupiec & Christoffersen.
