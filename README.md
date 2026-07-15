@@ -50,9 +50,10 @@ also reported — explicitly labelled as biased — to make the difference visib
 - Preferred by AIC: **GJR-GARCH for the IBEX, EGARCH for the S&P** — asymmetric
   models beat plain GARCH in both markets.
 
-**Risk validation (Stage 5, out-of-sample, 995 obs):**
+**Risk validation (Stage 5, out-of-sample, 995 obs at the headline 60/40 split):**
 - **All four S&P 500 combinations pass** conditional coverage; **all four IBEX 35
-  combinations fail.** The result splits by *market*, not by model.
+  combinations fail.** The result splits by *market*, not by model — **but this
+  verdict only holds in a calm test period, see below.**
 - **The IBEX fails on clustering, not on count.** IBEX GARCH at 99% has near
   perfect unconditional coverage (10 breaches vs 10 expected, Kupiec p = 0.987 —
   the best value in the table) but fails independence (p = 0.003): its breaches
@@ -60,19 +61,36 @@ also reported — explicitly labelled as biased — to make the difference visib
 - GARCH produces fewer breaches than EWMA in both markets, but in the IBEX even
   GARCH cannot disperse them — the Spanish market's problem isn't solved by
   swapping the volatility model.
-- **Stress-tested against its own methodology:** the headline backtest refits
-  every 5 days as a computational compromise, so we re-ran it at 1, 10 and 20
-  days too. The IBEX's clustering tendency survives every cadence (independence
-  p never exceeds 0.085; the S&P's never drops below 0.075) — but the exact
-  pass/fail verdict is cadence-sensitive for both markets. The signal is real;
-  no single backtest configuration should be read as a final verdict.
+- **Stress-tested against its own methodology, twice.** The headline backtest
+  refits every 5 days and uses a 60/40 train/test split, both arbitrary
+  choices, so both were swept: (1) refit cadence at 1, 10 and 20 days — the
+  IBEX's clustering tendency survives every cadence (independence p never
+  exceeds 0.085; the S&P's never drops below 0.075), but the exact pass/fail
+  verdict is cadence-sensitive for both markets; (2) **the train/test split
+  itself — the single most important robustness check in this project.**
 
-**What a validator would conclude:** for the S&P 500 the parametric GARCH VaR is
-validated and fit for use. For the IBEX 35 it is **not** validated — it calibrates
-the average level of risk well but clusters its failures, which is the most
-dangerous failure mode (failing repeatedly during a crisis). Recommended next
-steps for the IBEX: regime-switching models, Expected Shortfall, or an EVT
-treatment of the tail.
+**The headline result above is a calm-period finding, and that turns out to
+matter enormously.** The 60/40 split's test period (mid-2022 onward) happens
+to exclude COVID-2020, which falls inside the *training* window instead.
+Re-running the identical backtest with an initial window small enough to pull
+COVID-2020 into the test period makes **all 8 cells fail** — including every
+S&P 500 cell that passed cleanly before — and the S&P's failure mode becomes
+genuine miscoverage (breach rates near double nominal at 99%), not just
+clustering. What *does* survive a crisis-inclusive test period: the IBEX's
+breach-clustering problem (independence fails at every split tried, COVID or
+not) and the S&P's freedom from it (independence never fails, even during
+COVID) — that specific cross-market difference is the one result robust to
+every check in this project.
+
+**What a validator would conclude:** the S&P 500's parametric GARCH VaR is
+validated **in calm markets** but not (on raw coverage) once a genuine crisis
+enters the test window; the IBEX 35 is not validated in either regime, and
+fails specifically because its breaches cluster — the most dangerous failure
+mode a risk model can have (failing repeatedly during a live crisis). A
+backtest that never tests a stress period cannot make this distinction, and a
+risk model's "pass" is close to meaningless without knowing whether its test
+window contained one. Recommended next steps: regime-switching models,
+Expected Shortfall, or an EVT treatment of the tail.
 
 ## Why this isn't another generic ARIMA-GARCH repo
 
@@ -93,7 +111,9 @@ validated a PD model; this validates a VaR model.
 - **Common trading days only:** the two markets are aligned on shared sessions
   rather than forward-filling, which would create artificial zero returns.
 - **Fixed window** ending 2026-07-01 (~10 years, 2,486 obs) so results are
-  reproducible; includes the COVID-2020 stress.
+  reproducible; includes the COVID-2020 stress in-sample, though the headline
+  60/40 OOS split places it in training rather than the test period — see
+  Stage 5, Section 13.
 
 ## Limitations
 
@@ -101,10 +121,12 @@ Stated explicitly in the notebooks: 1-day horizon only (no multi-day VaR);
 univariate (no portfolio risk or tail dependence via copulas); symmetric
 Student-t (a skewed-t may fit equity returns better); parametric VaR
 underestimates the extreme tail (EVT would model it directly); a single 10-year
-window (5/10/15y sensitivity remains an open robustness gap); refit cadence was
-stress-tested (1/5/10/20 days — see Stage 5, Section 12) rather than left as an
-untested assumption; and VaR is a statistical measure — it excludes liquidity
-and model risk.
+window (5/10/15y sensitivity remains an open robustness gap, though Section 13
+partially probes it by varying the train/test boundary within that window);
+both the refit cadence (1/5/10/20 days) and the train/test split (35/50/60%,
+crisis-inclusive vs. not) were stress-tested — see Stage 5, Sections 12-13 —
+rather than left as untested assumptions; and VaR is a statistical measure — it
+excludes liquidity and model risk.
 
 ## Setup
 

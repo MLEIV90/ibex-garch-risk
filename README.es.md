@@ -53,10 +53,12 @@ sesgado— para hacer visible la diferencia.
 - Preferidos por AIC: **GJR-GARCH para el IBEX, EGARCH para el S&P** — los
   modelos asimétricos superan al GARCH simple en ambos mercados.
 
-**Validación de riesgo (Etapa 5, out-of-sample, 995 obs):**
+**Validación de riesgo (Etapa 5, out-of-sample, 995 obs con el split 60/40
+principal):**
 - **Las cuatro combinaciones del S&P 500 pasan** la cobertura condicional; **las
   cuatro del IBEX 35 fallan.** El resultado se separa por *mercado*, no por
-  modelo.
+  modelo — **pero este veredicto solo se sostiene en un periodo de test
+  tranquilo, ver más abajo.**
 - **El IBEX falla por agrupamiento, no por cantidad.** El IBEX con GARCH al 99%
   tiene una cobertura incondicional casi perfecta (10 violaciones vs 10
   esperadas; Kupiec p = 0,987, el mejor valor de la tabla) pero falla el test de
@@ -65,20 +67,39 @@ sesgado— para hacer visible la diferencia.
 - El GARCH produce menos violaciones que el EWMA en ambos mercados, pero en el
   IBEX ni el GARCH logra dispersarlas: el problema del mercado español no se
   resuelve cambiando el modelo de volatilidad.
-- **Sometido a estrés contra su propia metodología:** el backtest principal
-  reajusta cada 5 días como compromiso computacional, así que lo repetimos a 1,
-  10 y 20 días. La tendencia al agrupamiento del IBEX sobrevive a cada
+- **Sometido a estrés contra su propia metodología, dos veces.** El backtest
+  principal reajusta cada 5 días y usa un split 60/40, ambas elecciones
+  arbitrarias, así que ambas se sometieron a estrés: (1) frecuencia de reajuste
+  a 1, 10 y 20 días — la tendencia al agrupamiento del IBEX sobrevive a cada
   frecuencia (la p de independencia nunca supera 0,085; la del S&P nunca baja
-  de 0,075) — pero el veredicto exacto de aprobado/reprobado es sensible a la
-  frecuencia de reajuste en ambos mercados. La señal es real; ninguna
-  configuración de backtest por sí sola debe leerse como veredicto final.
+  de 0,075), pero el veredicto exacto de aprobado/reprobado es sensible a la
+  frecuencia en ambos mercados; (2) **el propio split train/test — la prueba de
+  robustez más importante de este proyecto.**
 
-**La conclusión de un validador:** para el S&P 500, el VaR paramétrico con GARCH
-está validado y es apto para uso. Para el IBEX 35 **no** está validado: calibra
-bien el nivel medio de riesgo pero agrupa sus fallos, que es el modo de fallo más
-peligroso (fallar repetidamente durante una crisis). Líneas de acción para el
-IBEX: modelos de cambio de régimen, Expected Shortfall, o un tratamiento EVT de
-la cola.
+**El resultado principal de arriba es un hallazgo de periodo tranquilo, y eso
+importa enormemente.** El periodo de test del split 60/40 (desde mediados de
+2022) excluye el COVID-2020, que cae dentro de la ventana de *entrenamiento* en
+su lugar. Repetir el mismo backtest con una ventana inicial lo bastante pequeña
+para meter el COVID-2020 en el periodo de test hace que **fallen las 8
+combinaciones** — incluidas las cuatro del S&P 500 que antes pasaban limpio — y
+el modo de fallo del S&P pasa a ser cobertura incondicional genuina (tasas de
+violación cercanas al doble de lo nominal al 99%), no solo agrupamiento. Lo que
+sí sobrevive a un periodo de test que incluye una crisis real: el problema de
+agrupamiento del IBEX (la independencia falla en todos los splits probados, con
+o sin COVID) y la ausencia de ese problema en el S&P (la independencia nunca
+falla, ni siquiera durante el COVID) — esa diferencia cross-market específica es
+el único resultado que sobrevive a todas las pruebas de este proyecto.
+
+**La conclusión de un validador:** el VaR paramétrico con GARCH del S&P 500 está
+validado **en mercados tranquilos**, pero no (en cobertura incondicional) una vez
+que una crisis real entra en el periodo de test; el IBEX 35 no está validado en
+ningún régimen, y falla específicamente porque sus violaciones se agrupan — el
+modo de fallo más peligroso que puede tener un modelo de riesgo (fallar
+repetidamente durante una crisis real). Un backtest que nunca prueba un periodo
+de estrés no puede hacer esta distinción, y el "aprobado" de un modelo de riesgo
+carece casi de sentido sin saber si su ventana de test contenía uno. Líneas de
+acción recomendadas: modelos de cambio de régimen, Expected Shortfall, o un
+tratamiento EVT de la cola.
 
 ## Por qué no es otro repo genérico de ARIMA-GARCH
 
@@ -101,7 +122,9 @@ modelo de PD; este valida un modelo de VaR.
   compartidas en lugar de rellenar hacia adelante, lo que crearía retornos cero
   artificiales.
 - **Ventana fija** hasta 2026-07-01 (~10 años, 2.486 obs) para que los resultados
-  sean reproducibles; incluye el estrés del COVID-2020.
+  sean reproducibles; incluye el estrés del COVID-2020 dentro de la muestra,
+  aunque el split OOS 60/40 principal lo deja en entrenamiento y no en el
+  periodo de test — ver Etapa 5, Sección 13.
 
 ## Limitaciones
 
@@ -110,10 +133,12 @@ VaR multi-día); univariado (sin riesgo de portafolio ni dependencia de colas v�
 cópulas); t de Student simétrica (una skew-t podría ajustar mejor los retornos
 accionarios); el VaR paramétrico subestima la cola extrema (EVT la modelaría
 directamente); ventana única de 10 años (la sensibilidad 5/10/15 años queda como
-brecha de robustez abierta); la frecuencia de reajuste sí se sometió a estrés
-(1/5/10/20 días — ver Etapa 5, Sección 12) en vez de quedar como supuesto sin
-probar; y el VaR es una medida estadística — excluye riesgo de liquidez y de
-modelo.
+brecha de robustez abierta, aunque la Sección 13 la explora parcialmente
+variando dónde cae el corte train/test dentro de esa ventana); tanto la
+frecuencia de reajuste (1/5/10/20 días) como el split train/test (35/50/60%,
+con y sin crisis en el periodo de test) se sometieron a estrés — ver Etapa 5,
+Secciones 12-13 — en vez de quedar como supuestos sin probar; y el VaR es una
+medida estadística — excluye riesgo de liquidez y de modelo.
 
 ## Uso
 
