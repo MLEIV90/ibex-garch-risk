@@ -51,8 +51,10 @@ also reported — explicitly labelled as biased — to make the difference visib
   models beat plain GARCH in both markets.
 
 **Risk validation (Stage 5, out-of-sample, 995 obs at the headline 60/40 split):**
-- **All four S&P 500 combinations pass** conditional coverage; **all four IBEX 35
-  combinations fail.** The result splits by *market*, not by model — **but this
+- **All four S&P 500 combinations pass** conditional coverage under the
+  standard asymptotic test (**three of four under exact Monte Carlo
+  p-values — see below**); **all four IBEX 35 combinations fail outright
+  either way.** The result splits by *market*, not by model — **but this
   verdict only holds in a calm test period, see below.**
 - **The IBEX fails on clustering, not on count.** IBEX GARCH at 99% has near
   perfect unconditional coverage (10 breaches vs 10 expected, Kupiec p = 0.987 —
@@ -61,14 +63,15 @@ also reported — explicitly labelled as biased — to make the difference visib
 - GARCH produces fewer breaches than EWMA in both markets, but in the IBEX even
   GARCH cannot disperse them — the Spanish market's problem isn't solved by
   swapping the volatility model.
-- **Stress-tested against its own methodology, four times.** Refit cadence,
-  train/test split, mean-model choice, and innovation skewness were all
-  originally arbitrary or argued-for (not tested) choices, so all four were
-  swept: refit cadence (1/5/10/20 days) and mean model (Constant vs. each
-  index's Stage-2 AR order) are **vindicated** — the pass/fail verdict is
-  essentially unchanged; train/test split (below) and innovation skewness
-  are **not** merely vindicated — one overturns the headline result, the
-  other fixes a real weakness.
+- **Stress-tested against its own methodology, five times.** Refit cadence,
+  train/test split, mean-model choice, innovation skewness, and the validity
+  of the chi-squared asymptotic approximation itself were all originally
+  arbitrary, argued-for, or unexamined — so all five were tested: refit
+  cadence, mean model, and the asymptotic approximation (mostly) are
+  **vindicated** — verdicts are essentially unchanged; train/test split,
+  innovation skewness, and the asymptotic approximation (at one specific
+  cell) are **not** merely vindicated — one overturns the headline result,
+  one fixes a real weakness, and one quietly flips a borderline pass.
 - **Skew-t innovations fix the S&P 500's weakest cell.** Stage 1 found
   negative skewness in returns that Stages 3-5's symmetric Student-t
   ignored. Refitting with Hansen's skew-t (λ significant and negative for
@@ -76,6 +79,16 @@ also reported — explicitly labelled as biased — to make the difference visib
   barely passing — into a comfortable pass (Kupiec p = 0.527). It does
   nothing for the IBEX's clustering problem, because skewness fixes tail
   *shape*, not reaction *speed* — exactly the distinction that matters here.
+- **Exact Monte Carlo p-values flip that same weak cell to a fail.** All
+  ~180 p-values in this project rest on the chi-squared asymptotic
+  approximation, questionable when only 8-17 breaches drive a test.
+  Replacing it with an exact, simulation-based p-value (Dufour 2006)
+  confirms every 95%-level verdict and strengthens every IBEX 99% rejection
+  — but flips the S&P 500 GARCH VaR at 99% from pass (asymptotic p = 0.072)
+  to fail (exact p = 0.042): the asymptotic test was systematically too
+  generous at that sample size. Skew-t (above) independently fixes the same
+  cell, which two unrelated checks flagging the same weakness makes more,
+  not less, convincing.
 
 **The headline result above is a calm-period finding, and that turns out to
 matter enormously.** The 60/40 split's test period (mid-2022 onward) happens
@@ -92,16 +105,19 @@ every check in this project.
 
 **What a validator would conclude:** the S&P 500's parametric GARCH VaR is
 validated **in calm markets** but not (on raw coverage) once a genuine crisis
-enters the test window; the IBEX 35 is not validated in either regime, and
-fails specifically because its breaches cluster — the most dangerous failure
-mode a risk model can have (failing repeatedly during a live crisis), and one
-that survives every single robustness check run against it. A backtest that
-never tests a stress period cannot make this distinction, and a risk model's
-"pass" is close to meaningless without knowing whether its test window
-contained one. Recommended next steps: **adopt skew-t innovations for the
-S&P 500** (tested, adoptable, no downside found); regime-switching models or
-an EVT tail treatment for the IBEX's still-unresolved reaction-speed problem;
-and Expected Shortfall as a supplement to VaR for both markets.
+enters the test window, and even its calm-period 99% cell doesn't survive
+exact inference; the IBEX 35 is not validated in either regime, and fails
+specifically because its breaches cluster — the most dangerous failure mode
+a risk model can have (failing repeatedly during a live crisis), and one
+that survives every single robustness *and* statistical check run against
+it. A backtest that never tests a stress period cannot make this
+distinction, and neither can one that trusts an asymptotic p-value at a
+sample size where it hasn't been checked. Recommended next steps: **adopt
+skew-t innovations for the S&P 500** (tested, adoptable, no downside found);
+**use exact Monte Carlo p-values, not chi-squared ones, at the 99% level**
+(negligible extra computation); regime-switching models or an EVT tail
+treatment for the IBEX's still-unresolved reaction-speed problem; and
+Expected Shortfall as a supplement to VaR for both markets.
 
 ## Why this isn't another generic ARIMA-GARCH repo
 
@@ -134,12 +150,19 @@ likely still underestimates the very extreme tail even with skew-t (EVT
 would model it directly); a single 10-year window (5/10/15y sensitivity
 remains an open robustness gap, though Section 13 partially probes it by
 varying the train/test boundary within that window); and VaR is a
-statistical measure — it excludes liquidity and model risk. Four originally
-untested or merely-argued-for assumptions — refit cadence (1/5/10/20 days),
-train/test split (35/50/60%, crisis-inclusive vs. not), mean model (Constant
-vs. AR), and innovation skewness (Student-t vs. skew-t) — were stress-tested
-against the backtest rather than left as assumptions; see Stage 5, Sections
-12-15.
+statistical measure — it excludes liquidity and model risk. Five originally
+untested, merely-argued-for, or simply-assumed items — refit cadence
+(1/5/10/20 days), train/test split (35/50/60%, crisis-inclusive vs. not),
+mean model (Constant vs. AR), innovation skewness (Student-t vs. skew-t),
+and the validity of the chi-squared asymptotic approximation itself
+(vs. exact Monte Carlo p-values) — were tested against the backtest rather
+than left as assumptions; see Stage 5, Sections 12-15 and 18. Four further
+statistical caveats — multiple testing across ~180 tests (not
+Bonferroni-corrected, deliberately: see Stage 5 Section 19), low power of
+the independence test at 8-17 breaches, its blindness to clustering beyond
+one day of lag, and uncorrected estimation risk in the rolling-refit VaR
+sequence — are stated but not resolved within this framework; see Stage 5,
+Section 19.
 
 ## Setup
 
