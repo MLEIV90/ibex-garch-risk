@@ -67,14 +67,25 @@ principal):**
 - El GARCH produce menos violaciones que el EWMA en ambos mercados, pero en el
   IBEX ni el GARCH logra dispersarlas: el problema del mercado español no se
   resuelve cambiando el modelo de volatilidad.
-- **Sometido a estrés contra su propia metodología, dos veces.** El backtest
-  principal reajusta cada 5 días y usa un split 60/40, ambas elecciones
-  arbitrarias, así que ambas se sometieron a estrés: (1) frecuencia de reajuste
-  a 1, 10 y 20 días — la tendencia al agrupamiento del IBEX sobrevive a cada
-  frecuencia (la p de independencia nunca supera 0,085; la del S&P nunca baja
-  de 0,075), pero el veredicto exacto de aprobado/reprobado es sensible a la
-  frecuencia en ambos mercados; (2) **el propio split train/test — la prueba de
-  robustez más importante de este proyecto.**
+- **Sometido a estrés contra su propia metodología, cuatro veces.** La
+  frecuencia de reajuste, el split train/test, la elección de modelo de
+  media y la asimetría de las innovaciones eran, en origen, elecciones
+  arbitrarias o solo argumentadas (no probadas), así que las cuatro se
+  sometieron a estrés: la frecuencia de reajuste (1/5/10/20 días) y el
+  modelo de media (Constante vs. el orden AR de la Etapa 2 de cada índice)
+  quedan **confirmados** — el veredicto de aprobado/reprobado apenas cambia;
+  el split train/test (más abajo) y la asimetría de las innovaciones **no**
+  quedan simplemente confirmados — uno revierte el resultado principal, el
+  otro corrige una debilidad real.
+- **Las innovaciones skew-t corrigen la celda más débil del S&P 500.** La
+  Etapa 1 encontró asimetría negativa en los retornos que las Etapas 3-5
+  ignoraban con una t de Student simétrica. Reajustar con la skew-t de
+  Hansen (λ significativa y negativa en ambos índices) convierte el
+  resultado más frágil del S&P — VaR al 99%, Kupiec p = 0,041, aprobado por
+  poco — en un aprobado cómodo (Kupiec p = 0,527). No hace nada por el
+  problema de agrupamiento del IBEX, porque la asimetría corrige la *forma*
+  de la cola, no la *velocidad* de reacción — que es exactamente lo que le
+  falla al IBEX.
 
 **El resultado principal de arriba es un hallazgo de periodo tranquilo, y eso
 importa enormemente.** El periodo de test del split 60/40 (desde mediados de
@@ -95,11 +106,14 @@ validado **en mercados tranquilos**, pero no (en cobertura incondicional) una ve
 que una crisis real entra en el periodo de test; el IBEX 35 no está validado en
 ningún régimen, y falla específicamente porque sus violaciones se agrupan — el
 modo de fallo más peligroso que puede tener un modelo de riesgo (fallar
-repetidamente durante una crisis real). Un backtest que nunca prueba un periodo
+repetidamente durante una crisis real), y uno que sobrevive a todas las pruebas
+de robustez realizadas contra él. Un backtest que nunca prueba un periodo
 de estrés no puede hacer esta distinción, y el "aprobado" de un modelo de riesgo
 carece casi de sentido sin saber si su ventana de test contenía uno. Líneas de
-acción recomendadas: modelos de cambio de régimen, Expected Shortfall, o un
-tratamiento EVT de la cola.
+acción recomendadas: **adoptar innovaciones skew-t para el S&P 500** (probado,
+adoptable, sin coste detectado); modelos de cambio de régimen o un tratamiento
+EVT de la cola para el problema de velocidad de reacción del IBEX, aún sin
+resolver; y Expected Shortfall como complemento del VaR en ambos mercados.
 
 ## Por qué no es otro repo genérico de ARIMA-GARCH
 
@@ -130,15 +144,17 @@ modelo de PD; este valida un modelo de VaR.
 
 Declaradas explícitamente en los notebooks: horizonte de 1 día únicamente (sin
 VaR multi-día); univariado (sin riesgo de portafolio ni dependencia de colas vía
-cópulas); t de Student simétrica (una skew-t podría ajustar mejor los retornos
-accionarios); el VaR paramétrico subestima la cola extrema (EVT la modelaría
-directamente); ventana única de 10 años (la sensibilidad 5/10/15 años queda como
-brecha de robustez abierta, aunque la Sección 13 la explora parcialmente
-variando dónde cae el corte train/test dentro de esa ventana); tanto la
-frecuencia de reajuste (1/5/10/20 días) como el split train/test (35/50/60%,
-con y sin crisis en el periodo de test) se sometieron a estrés — ver Etapa 5,
-Secciones 12-13 — en vez de quedar como supuestos sin probar; y el VaR es una
-medida estadística — excluye riesgo de liquidez y de modelo.
+cópulas); el VaR paramétrico probablemente sigue subestimando la cola muy
+extrema incluso con skew-t (EVT la modelaría directamente); ventana única de
+10 años (la sensibilidad 5/10/15 años queda como brecha de robustez abierta,
+aunque la Sección 13 la explora parcialmente variando dónde cae el corte
+train/test dentro de esa ventana); y el VaR es una medida estadística —
+excluye riesgo de liquidez y de modelo. Cuatro supuestos originalmente sin
+probar o solo argumentados — frecuencia de reajuste (1/5/10/20 días), split
+train/test (35/50/60%, con y sin crisis en el periodo de test), modelo de
+media (Constante vs. AR) y asimetría de las innovaciones (t de Student vs.
+skew-t) — se sometieron a estrés contra el backtest en vez de quedar como
+supuestos; ver Etapa 5, Secciones 12-15.
 
 ## Uso
 

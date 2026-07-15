@@ -61,13 +61,21 @@ also reported — explicitly labelled as biased — to make the difference visib
 - GARCH produces fewer breaches than EWMA in both markets, but in the IBEX even
   GARCH cannot disperse them — the Spanish market's problem isn't solved by
   swapping the volatility model.
-- **Stress-tested against its own methodology, twice.** The headline backtest
-  refits every 5 days and uses a 60/40 train/test split, both arbitrary
-  choices, so both were swept: (1) refit cadence at 1, 10 and 20 days — the
-  IBEX's clustering tendency survives every cadence (independence p never
-  exceeds 0.085; the S&P's never drops below 0.075), but the exact pass/fail
-  verdict is cadence-sensitive for both markets; (2) **the train/test split
-  itself — the single most important robustness check in this project.**
+- **Stress-tested against its own methodology, four times.** Refit cadence,
+  train/test split, mean-model choice, and innovation skewness were all
+  originally arbitrary or argued-for (not tested) choices, so all four were
+  swept: refit cadence (1/5/10/20 days) and mean model (Constant vs. each
+  index's Stage-2 AR order) are **vindicated** — the pass/fail verdict is
+  essentially unchanged; train/test split (below) and innovation skewness
+  are **not** merely vindicated — one overturns the headline result, the
+  other fixes a real weakness.
+- **Skew-t innovations fix the S&P 500's weakest cell.** Stage 1 found
+  negative skewness in returns that Stages 3-5's symmetric Student-t
+  ignored. Refitting with Hansen's skew-t (λ significant and negative for
+  both indices) turns the S&P's shakiest result — 99% VaR, Kupiec p = 0.041,
+  barely passing — into a comfortable pass (Kupiec p = 0.527). It does
+  nothing for the IBEX's clustering problem, because skewness fixes tail
+  *shape*, not reaction *speed* — exactly the distinction that matters here.
 
 **The headline result above is a calm-period finding, and that turns out to
 matter enormously.** The 60/40 split's test period (mid-2022 onward) happens
@@ -86,11 +94,14 @@ every check in this project.
 validated **in calm markets** but not (on raw coverage) once a genuine crisis
 enters the test window; the IBEX 35 is not validated in either regime, and
 fails specifically because its breaches cluster — the most dangerous failure
-mode a risk model can have (failing repeatedly during a live crisis). A
-backtest that never tests a stress period cannot make this distinction, and a
-risk model's "pass" is close to meaningless without knowing whether its test
-window contained one. Recommended next steps: regime-switching models,
-Expected Shortfall, or an EVT treatment of the tail.
+mode a risk model can have (failing repeatedly during a live crisis), and one
+that survives every single robustness check run against it. A backtest that
+never tests a stress period cannot make this distinction, and a risk model's
+"pass" is close to meaningless without knowing whether its test window
+contained one. Recommended next steps: **adopt skew-t innovations for the
+S&P 500** (tested, adoptable, no downside found); regime-switching models or
+an EVT tail treatment for the IBEX's still-unresolved reaction-speed problem;
+and Expected Shortfall as a supplement to VaR for both markets.
 
 ## Why this isn't another generic ARIMA-GARCH repo
 
@@ -118,15 +129,17 @@ validated a PD model; this validates a VaR model.
 ## Limitations
 
 Stated explicitly in the notebooks: 1-day horizon only (no multi-day VaR);
-univariate (no portfolio risk or tail dependence via copulas); symmetric
-Student-t (a skewed-t may fit equity returns better); parametric VaR
-underestimates the extreme tail (EVT would model it directly); a single 10-year
-window (5/10/15y sensitivity remains an open robustness gap, though Section 13
-partially probes it by varying the train/test boundary within that window);
-both the refit cadence (1/5/10/20 days) and the train/test split (35/50/60%,
-crisis-inclusive vs. not) were stress-tested — see Stage 5, Sections 12-13 —
-rather than left as untested assumptions; and VaR is a statistical measure — it
-excludes liquidity and model risk.
+univariate (no portfolio risk or tail dependence via copulas); parametric VaR
+likely still underestimates the very extreme tail even with skew-t (EVT
+would model it directly); a single 10-year window (5/10/15y sensitivity
+remains an open robustness gap, though Section 13 partially probes it by
+varying the train/test boundary within that window); and VaR is a
+statistical measure — it excludes liquidity and model risk. Four originally
+untested or merely-argued-for assumptions — refit cadence (1/5/10/20 days),
+train/test split (35/50/60%, crisis-inclusive vs. not), mean model (Constant
+vs. AR), and innovation skewness (Student-t vs. skew-t) — were stress-tested
+against the backtest rather than left as assumptions; see Stage 5, Sections
+12-15.
 
 ## Setup
 
