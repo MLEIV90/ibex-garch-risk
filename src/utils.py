@@ -10,6 +10,8 @@ deliverable. See each notebook's own markdown for the theory and
 interpretation behind these functions; this module only defines them once.
 """
 
+import os
+
 import numpy as np
 import pandas as pd
 import yfinance as yf
@@ -18,16 +20,56 @@ from scipy import stats
 DEFAULT_TICKERS = {"IBEX35": "^IBEX", "SP500": "^GSPC"}
 DEFAULT_END = pd.Timestamp("2026-07-01")
 
+# The default (tickers, start, end) combination is the one every notebook in
+# this project actually uses. That fixed dataset is cached to disk and
+# committed to the repo so results are reproducible offline and immune to
+# Yahoo Finance silently revising historical prices -- see download_data's
+# docstring. The cache never applies to a non-default window/ticker set.
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(_REPO_ROOT, "data")
+PRICE_CACHE_PATH = os.path.join(DATA_DIR, "prices_ibex_sp500.csv")
 
-def download_data(start=None, end=None, tickers=None, pct=True):
+
+def _normalize_prices(prices):
     """
-    Download adjusted daily closes, align to common trading days, and
-    return log returns.
+    Canonical dtype/index/columns form for the prices DataFrame, applied
+    identically whether `prices` just came from a fresh yfinance download or
+    was reloaded from the CSV cache -- so the two code paths are guaranteed
+    to return bit-for-bit identical DataFrames, not merely equal values.
+    """
+    prices = prices.astype("float64")
+    prices.index = pd.DatetimeIndex(prices.index.astype("datetime64[ns]"), name="Date")
+    prices.columns.name = "Ticker"
+    return prices
 
-    Downloads via yfinance with auto_adjust=True (splits/dividends
-    corrected), keeps only days where every ticker actually traded
-    (dropna(how="any")) rather than forward-filling gaps -- forward-filling
-    would manufacture artificial zero-return days for whichever market was
+
+def _download_prices(tickers, start, end):
+    raw = yf.download(list(tickers.values()), start=start, end=end, auto_adjust=True, progress=False)
+    prices = raw["Close"].rename(columns={v: k for k, v in tickers.items()})
+    prices = prices.dropna(how="any")
+    return _normalize_prices(prices)
+
+
+def download_data(start=None, end=None, tickers=None, pct=True, force_download=False):
+    """
+    Load adjusted daily closes, align to common trading days, and return log
+    returns.
+
+    For the project's default (tickers, start, end) -- i.e. every call made
+    without arguments, or with only `pct` set -- this is **cache-first**:
+    if `data/prices_ibex_sp500.csv` exists, it's loaded from disk and the
+    network is never touched; otherwise the data is downloaded via yfinance
+    (auto_adjust=True, splits/dividends corrected) and the cache file is
+    written so the next call doesn't need the network either. That cache
+    file is committed to the repo, so cloning it and running the notebooks
+    reproduces the exact published numbers with no network access and no
+    exposure to Yahoo Finance silently revising historical prices between
+    runs. Pass `force_download=True` to deliberately refresh the cache from
+    a fresh download (e.g. if the fixed end date is ever moved forward).
+
+    Only days where every ticker actually traded are kept
+    (dropna(how="any")) rather than forward-filled -- forward-filling would
+    manufacture artificial zero-return days for whichever market was
     closed. See Stage 1's "note on trading-day alignment" for the full
     reasoning.
 
@@ -49,6 +91,10 @@ def download_data(start=None, end=None, tickers=None, pct=True):
         to condition well. If False, return raw decimal log returns -- the
         convention used in Stages 1-2, which don't fit any numerically
         sensitive optimizer.
+    force_download : bool, default False
+        If True, always download fresh from yfinance and overwrite the
+        cache (only for the default window; see above). If False (default),
+        use the cache when it exists and the window/tickers are the default.
 
     Returns
     -------
@@ -64,9 +110,20 @@ def download_data(start=None, end=None, tickers=None, pct=True):
     if start is None:
         start = end - pd.DateOffset(years=10)
 
-    raw = yf.download(list(tickers.values()), start=start, end=end, auto_adjust=True, progress=False)
-    prices = raw["Close"].rename(columns={v: k for k, v in tickers.items()})
-    prices = prices.dropna(how="any")
+    is_default_window = (
+        tickers == DEFAULT_TICKERS
+        and end == DEFAULT_END
+        and start == DEFAULT_END - pd.DateOffset(years=10)
+    )
+
+    if is_default_window and not force_download and os.path.exists(PRICE_CACHE_PATH):
+        prices = pd.read_csv(PRICE_CACHE_PATH, index_col=0, parse_dates=True)
+        prices = _normalize_prices(prices)
+    else:
+        prices = _download_prices(tickers, start, end)
+        if is_default_window:
+            os.makedirs(DATA_DIR, exist_ok=True)
+            prices.to_csv(PRICE_CACHE_PATH)
 
     returns = np.log(prices / prices.shift(1)).dropna()
     if pct:

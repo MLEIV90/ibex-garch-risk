@@ -157,6 +157,13 @@ modelo de PD; este valida un modelo de VaR.
   sean reproducibles; incluye el estrés del COVID-2020 dentro de la muestra,
   aunque el split OOS 60/40 principal lo deja en entrenamiento y no en el
   periodo de test — ver Etapa 5, Sección 13.
+- **Snapshot de datos incluido en el repo, no descargado en cada ejecución.**
+  `data/prices_ibex_sp500.csv` es exactamente el dataset de la ventana fija
+  sobre el que corre cada notebook; `download_data()` usa esa caché primero
+  y no toca la red. Esto significa que el análisis se reproduce sin conexión
+  y es inmune a que Yahoo Finance revise en silencio los precios históricos
+  entre ejecuciones — usa `force_download=True` para refrescar la caché
+  deliberadamente.
 
 ## Limitaciones
 

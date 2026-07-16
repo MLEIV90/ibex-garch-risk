@@ -18,8 +18,9 @@ env/
 .DS_Store
 Thumbs.db
 
-# Data (downloaded via yfinance, reproducible from notebooks)
-data/*.csv
+# Data: prices_ibex_sp500.csv IS committed deliberately -- it's the fixed
+# data snapshot the whole project's reproducibility depends on (see
+# src/utils.py's download_data). Only other/ad-hoc data artifacts are ignored.
 data/*.parquet
 
 # IDE

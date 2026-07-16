@@ -141,6 +141,12 @@ validated a PD model; this validates a VaR model.
   reproducible; includes the COVID-2020 stress in-sample, though the headline
   60/40 OOS split places it in training rather than the test period — see
   Stage 5, Section 13.
+- **Data snapshot committed to the repo, not downloaded live.**
+  `data/prices_ibex_sp500.csv` is the exact fixed-window dataset every
+  notebook runs on; `download_data()` is cache-first and loads it directly
+  without touching the network. This means the analysis reproduces offline
+  and is immune to Yahoo Finance silently revising historical prices between
+  runs — pass `force_download=True` to deliberately refresh the cache.
 
 ## Limitations
 
