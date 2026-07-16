@@ -45,13 +45,24 @@ sesgado— para hacer visible la diferencia.
 
 ## Hallazgos principales
 
-**Volatilidad cross-market (Etapa 3, 2.486 obs):**
-- El **apalancamiento es más fuerte en el S&P 500** (γ de GJR = 0,233) que en el
-  IBEX (0,189).
-- El **S&P tiene colas más pesadas** (ν ≈ 5,4 vs ≈ 7,6 del IBEX).
-- La **volatilidad es más persistente en el S&P** (0,97–0,98 vs 0,92–0,93).
+**Volatilidad cross-market (Etapa 3, 2.486 obs) — sometida a test formal, no
+solo comparada a ojo (Etapa 3, Sección 12):**
+- La **volatilidad es significativamente más persistente en el S&P 500**
+  (≈0,97–0,98 vs ≈0,92–0,93; z = 3,08, p = 0,002, confirmado con un block
+  bootstrap) — la única diferencia de parámetro cross-market que este
+  proyecto puede reclamar de verdad.
+- El **apalancamiento es significativo en ambos mercados pero no
+  distinguiblemente distinto entre ellos**: las estimaciones puntuales
+  favorecen al S&P (γ de GJR = 0,233 vs 0,189), pero un z-test (p = 0,43) y
+  un block bootstrap (p = 0,15) no logran distinguir la diferencia del
+  ruido muestral con ~2.500 obs/mercado.
+- El **grosor de colas es un empate genuino entre métodos**: la ν más baja
+  del S&P (≈5,4 vs ≈7,6 del IBEX) no es significativa con un z-test
+  (p = 0,11) pero sí con un block bootstrap (p = 0,006) — se reporta como
+  sugerente, no como zanjada.
 - Preferidos por AIC: **GJR-GARCH para el IBEX, EGARCH para el S&P** — los
-  modelos asimétricos superan al GARCH simple en ambos mercados.
+  modelos asimétricos superan al GARCH simple en ambos mercados (esta
+  comparación, dentro de cada mercado, no requiere un test cross-market).
 
 **Validación de riesgo (Etapa 5, out-of-sample, 995 obs con el split 60/40
 principal):**

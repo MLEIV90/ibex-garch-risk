@@ -43,12 +43,21 @@ also reported — explicitly labelled as biased — to make the difference visib
 
 ## Headline findings
 
-**Cross-market volatility (Stage 3, 2,486 obs):**
-- **Leverage is stronger in the S&P 500** (GJR γ = 0.233) than the IBEX (0.189).
-- **The S&P has heavier tails** (Student-t ν ≈ 5.4 vs ≈ 7.6 for the IBEX).
-- **Volatility is more persistent in the S&P** (0.97–0.98 vs 0.92–0.93).
+**Cross-market volatility (Stage 3, 2,486 obs) — formally tested, not just
+eyeballed (Stage 3, Section 12):**
+- **Volatility is significantly more persistent in the S&P 500** (≈0.97–0.98
+  vs ≈0.92–0.93; z = 3.08, p = 0.002, confirmed by a block bootstrap) — the
+  one cross-market parameter difference this project can actually claim.
+- **Leverage is significant in both markets but not distinguishably
+  different between them**: point estimates favor the S&P (GJR γ = 0.233 vs
+  0.189), but a z-test (p = 0.43) and a block bootstrap (p = 0.15) both fail
+  to distinguish the gap from sampling noise at ~2,500 obs/market.
+- **Tail thickness is a genuine toss-up between methods**: the S&P's lower ν
+  (≈5.4 vs ≈7.6 for the IBEX) is not significant by a z-test (p = 0.11) but
+  is by a block bootstrap (p = 0.006) — reported as suggestive, not settled.
 - Preferred by AIC: **GJR-GARCH for the IBEX, EGARCH for the S&P** — asymmetric
-  models beat plain GARCH in both markets.
+  models beat plain GARCH in both markets (this comparison, within each
+  market, doesn't require a cross-market test).
 
 **Risk validation (Stage 5, out-of-sample, 995 obs at the headline 60/40 split):**
 - **All four S&P 500 combinations pass** conditional coverage under the
